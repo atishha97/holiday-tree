@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Tree</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .ornament {
+            transition: transform 0.2s;
+        }
+
+        .ornament:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        body {
+            background-color: #fdfbf7;
+            /* Warm white */
+        }
+
+        @keyframes slide-up {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+
+        /* Custom Font */
+        @font-face {
+            font-family: 'Capriola';
+            src: url('assets/Capriola-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        .font-capriola {
+            font-family: 'Capriola', sans-serif;
+        }
+    </style>
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCewVsoPoaD8pqLniEFjv14Pvdr3AtpV-0",
+            authDomain: "holidaytree-13c88.firebaseapp.com",
+            projectId: "holidaytree-13c88",
+            storageBucket: "holidaytree-13c88.firebasestorage.app",
+            messagingSenderId: "821326031720",
+            appId: "1:821326031720:web:9d606323ae5c8d7c2e44dd"
+        };
+
+        // Initialize Firebase
+        window.firebaseApp = firebase.initializeApp(firebaseConfig);
+        window.auth = firebase.auth();
+        window.db = firebase.firestore(); // Initialized Firestore for future use
+    </script>
+</head>
+
+<body class="text-slate-800 font-capriola h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col md:flex-row">
+
+        <!-- Loading State -->
+        <div v-if="loading" class="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        </div>
+
+        <!-- Left Panel: Ornament Chest -->
+        <div
+            class="w-full md:w-[600px] pl-[240px] pr-6 pt-[80px] pb-[80px] flex flex-col z-20 overflow-y-auto justify-between">
+            <!-- Content Wrapper for strict alignment -->
+            <div class="w-[270px]">
+                <div class="mb-12">
+                    <h1 class="text-[58px] text-black mb-2 font-capriola tracking-normal leading-[1.1]">
+                        The<br>Holiday<br>Tree</h1>
+                </div>
+
+                <!-- Ornament Grid for Draggable Items -->
+                <div class="w-full mb-6">
+                    <div class="grid grid-cols-4 gap-4">
+                        <div v-for="orn in availableOrnaments" :key="orn"
+                            class="cursor-grab hover:scale-110 transition-transform active:cursor-grabbing flex items-start justify-center p-1 aspect-square"
+                            draggable="true" @dragstart="startDrag($event, orn)">
+                            <img :src="'assets/' + orn" class="w-full h-full object-contain object-top drop-shadow-md">
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-[18px] font-semibold text-black leading-snug w-full">Drag one ornament onto the tree to
+                    begin.</p>
+            </div>
+
+            <!-- Auth Section (Bottom) -->
+            <div class="w-[270px]">
+                <div class="pt-6 border-t border-stone-200">
+                    <div v-if="!user">
+                        <button @click="signIn"
+                            class="w-full bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl shadow-sm transition flex items-center justify-center gap-3 font-capriola text-base">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                                class="w-5 h-5">
+                            Sign in with Google
+                        </button>
+                        <p class="text-xs text-stone-400 mt-2 text-center font-capriola">Sign in to save your ornaments
+                        </p>
+                    </div>
+                    <div v-else class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <img :src="user.photoURL" class="w-9 h-9 rounded-full border border-stone-200 shrink-0">
+                            <p class="text-base font-bold text-stone-700 font-capriola truncate">{{ user.displayName }}
+                            </p>
+                        </div>
+                        <button @click="signOut"
+                            class="text-xs text-red-500 hover:text-red-700 font-bold font-capriola whitespace-nowrap ml-2">
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Tree Canvas -->
+        <div class="flex-1 bg-[#fdfbf7] relative flex items-end justify-center overflow-hidden" @dragover.prevent
+            @drop="onDrop" ref="dropZone">
+
+            <!-- Tree Container -->
+            <!-- Reduced size as requested -->
+            <div class="relative w-full max-w-3xl aspect-[3/4] translate-y-6">
+                <!-- Tree Image -->
+                <img src="assets/ChristmasTree2.png" alt="Christmas Tree"
+                    class="w-full h-full object-contain object-bottom pointer-events-none select-none drop-shadow-2xl">
+
+                <!-- Dropped Ornaments -->
+                <div v-for="ornament in ornaments" :key="ornament.id"
+                    class="ornament absolute w-16 h-16 -ml-8 -mt-8 cursor-pointer drop-shadow-xl filter hover:brightness-110"
+                    :class="{'cursor-move': isOwner}" :draggable="isOwner"
+                    @dragstart="startDrag($event, ornament.ornament_type, ornament.id)"
+                    :style="{ top: ornament.y + '%', left: ornament.x + '%' }" @click="openMessage(ornament)">
+                    <img :src="'assets/' + ornament.ornament_type" class="w-full h-full object-contain">
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Message Modal (Triggered on Drop) -->
+        <div v-if="pendingOrnament"
+            class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-slide-up font-capriola">
+                <div class="px-10 py-10">
+                    <div class="text-left mb-6">
+                        <img :src="'assets/' + pendingOrnament.type"
+                            class="w-16 h-16 object-contain drop-shadow-md mb-4">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-1 font-capriola">Share Your Message</h3>
+                        <p class="text-sm text-slate-400">Share holiday wishes with the community</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <textarea v-model="newOrnament.message"
+                                class="w-full h-40 border border-slate-200 rounded-xl p-4 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-100 focus:border-red-200 outline-none resize-none font-capriola text-base leading-relaxed shadow-inner placeholder-slate-300 transition"
+                                placeholder="Share your wishes..."></textarea>
+                        </div>
+
+                        <div>
+                            <input v-model="newOrnament.sender" type="text"
+                                class="w-full border-b border-slate-200 py-2 px-1 bg-transparent focus:border-red-400 outline-none text-base text-slate-600 placeholder-slate-300 transition font-capriola text-left"
+                                placeholder="from...">
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex flex-col gap-3">
+                        <button @click="confirmDrop" :disabled="!newOrnament.sender || !newOrnament.message"
+                            class="w-full py-3 px-6 bg-stone-800 hover:bg-stone-900 disabled:opacity-50 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 font-capriola">
+                            Hang Your Ornament
+                        </button>
+
+                        <button @click="cancelDrop"
+                            class="w-full py-3 px-6 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-base rounded-xl transition font-capriola text-center">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Message Modal -->
+        <div v-if="selectedOrnament"
+            class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            @click.self="selectedOrnament = null">
+            <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-8 text-center relative animate-fade-in">
+                <button @click="selectedOrnament = null"
+                    class="absolute top-4 right-4 text-slate-300 hover:text-slate-500 text-xl font-bold">&times;</button>
+
+                <img :src="'assets/' + selectedOrnament.ornament_type"
+                    class="w-24 h-24 mx-auto mb-6 object-contain drop-shadow-md">
+
+                <p class="text-2xl font-serif text-slate-800 mb-6 leading-relaxed italic">"{{
+                    selectedOrnament.message
+                    }}"</p>
+                <div class="border-t border-slate-100 pt-4">
+                    <div class="text-sm text-slate-400 uppercase tracking-widest text-[10px] font-bold mb-1">Sent By
+                    </div>
+                    <div class="text-lg font-bold text-red-600">{{ selectedOrnament.sender }}</div>
+                </div>
+
+                <button v-if="canDelete" @click="deleteOrnament"
+                    class="mt-6 w-full py-3 px-6 bg-red-500 hover:bg-red-600 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 font-capriola">
+                    Remove Ornament
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
