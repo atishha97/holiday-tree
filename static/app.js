@@ -82,7 +82,7 @@ createApp({
                 // Update URL
 
                 // Update URL
-                window.location.hash = `/tree/${treeId.value}`
+                window.history.pushState({}, '', `/tree/${treeId.value}`)
 
                 // Start listening
                 subscribeToOrnaments(treeId.value)
@@ -116,7 +116,7 @@ createApp({
                     console.warn("Tree not found in Firestore, creating new one.")
                     // Fallback: Create new tree if ID invalid
                     treeId.value = null
-                    window.location.hash = '/'
+                    window.history.pushState({}, '', '/')
                     createTree()
                 }
             } catch (e) {
@@ -262,26 +262,15 @@ createApp({
                 })
             }
 
-            // Routing (Hash Mode for GitHub Pages compatibility)
-            const handleHashChange = async () => {
-                const hash = window.location.hash
-                const match = hash.match(/#\/tree\/(.+)/)
-                if (match) {
-                    treeId.value = match[1]
-                    await loadTree()
-                } else {
-                    // If no hash or empty hash, create new
-                    if (!hash || hash === '#/') {
-                        await createTree()
-                    }
-                }
+            // Routing
+            const path = window.location.pathname
+            const match = path.match(/\/tree\/(.+)/)
+            if (match) {
+                treeId.value = match[1]
+                await loadTree()
+            } else {
+                await createTree()
             }
-
-            // Listen for hash changes (e.g. back button)
-            window.addEventListener('hashchange', handleHashChange)
-
-            // Initial Load
-            await handleHashChange()
         })
 
         // Computed Permissions

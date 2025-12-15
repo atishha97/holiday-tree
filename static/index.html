@@ -55,7 +55,7 @@
         /* Custom Font */
         @font-face {
             font-family: 'Capriola';
-            src: url('assets/Capriola-Regular.ttf') format('truetype');
+            src: url('/assets/Capriola-Regular.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
         }
@@ -112,7 +112,7 @@
                         <div v-for="orn in availableOrnaments" :key="orn"
                             class="cursor-grab hover:scale-110 transition-transform active:cursor-grabbing flex items-start justify-center p-1 aspect-square"
                             draggable="true" @dragstart="startDrag($event, orn)">
-                            <img :src="'assets/' + orn" class="w-full h-full object-contain object-top drop-shadow-md">
+                            <img :src="'/assets/' + orn" class="w-full h-full object-contain object-top drop-shadow-md">
                         </div>
                     </div>
                 </div>
@@ -157,7 +157,7 @@
             <!-- Reduced size as requested -->
             <div class="relative w-full max-w-3xl aspect-[3/4] translate-y-6">
                 <!-- Tree Image -->
-                <img src="assets/ChristmasTree2.png" alt="Christmas Tree"
+                <img src="/assets/ChristmasTree2.png" alt="Christmas Tree"
                     class="w-full h-full object-contain object-bottom pointer-events-none select-none drop-shadow-2xl">
 
                 <!-- Dropped Ornaments -->
@@ -166,7 +166,7 @@
                     :class="{'cursor-move': isOwner}" :draggable="isOwner"
                     @dragstart="startDrag($event, ornament.ornament_type, ornament.id)"
                     :style="{ top: ornament.y + '%', left: ornament.x + '%' }" @click="openMessage(ornament)">
-                    <img :src="'assets/' + ornament.ornament_type" class="w-full h-full object-contain">
+                    <img :src="'/assets/' + ornament.ornament_type" class="w-full h-full object-contain">
                 </div>
             </div>
         </div>
@@ -177,7 +177,7 @@
             <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-slide-up font-capriola">
                 <div class="px-10 py-10">
                     <div class="text-left mb-6">
-                        <img :src="'assets/' + pendingOrnament.type"
+                        <img :src="'/assets/' + pendingOrnament.type"
                             class="w-16 h-16 object-contain drop-shadow-md mb-4">
                         <h3 class="text-2xl font-bold text-slate-800 mb-1 font-capriola">Share Your Message</h3>
                         <p class="text-sm text-slate-400">Share holiday wishes with the community</p>
@@ -220,7 +220,7 @@
                 <button @click="selectedOrnament = null"
                     class="absolute top-4 right-4 text-slate-300 hover:text-slate-500 text-xl font-bold">&times;</button>
 
-                <img :src="'assets/' + selectedOrnament.ornament_type"
+                <img :src="'/assets/' + selectedOrnament.ornament_type"
                     class="w-24 h-24 mx-auto mb-6 object-contain drop-shadow-md">
 
                 <p class="text-2xl font-serif text-slate-800 mb-6 leading-relaxed italic">"{{
