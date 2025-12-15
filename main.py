@@ -136,8 +136,8 @@ from fastapi.responses import FileResponse
 # Explicit route for /tree/{id} needed because it's a dynamic path not in static folder
 @app.get("/tree/{tree_id}")
 async def read_tree_app(tree_id: str):
-    return FileResponse('static/index.html')
+    return FileResponse('index.html')
 
 # Mount static files at root (catch-all)
 # This serves index.html at / and app.js at /app.js
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory=".", html=True), name="root")
